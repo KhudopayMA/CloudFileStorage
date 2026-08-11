@@ -1,0 +1,57 @@
+from django.contrib.auth.models import User
+from django.core.validators import RegexValidator
+from rest_framework import serializers, status
+from rest_framework.exceptions import ValidationError
+from rest_framework.validators import UniqueValidator
+
+from config.exceptions import ConflictError
+
+english_letter_validator = RegexValidator(
+    regex=r'^[a-zA-Z0-9]+$',
+    message='Only English letters and numbers are allowed.',
+)
+
+
+class SignUpSerializer(serializers.Serializer):
+    username = serializers.CharField(
+        required=True,
+        max_length=20,
+        min_length=5,
+        validators=[
+            # UniqueValidator(queryset=User.objects.all(), message='User with this username already exists.'),
+            english_letter_validator,
+        ],
+        error_messages={
+            'unique': 'A user with that username already exists.',
+            'min_length': 'Username must be at least 5 characters.',
+            'max_length': 'Username must be at most 100 characters.',
+        }
+    )
+    password = serializers.CharField(required=True, max_length=20, min_length=5)
+
+    def validate_username(self, username):
+        if User.objects.filter(username=username).exists():
+            raise ConflictError('Username already in use.')
+        return username
+
+
+class SignInSerializer(serializers.Serializer):
+    # TODO думаю стоит убрать повтряющийся сериализатор
+    username = serializers.CharField(
+        required=True,
+        max_length=20,
+        min_length=5,
+        validators=[
+            english_letter_validator
+        ],
+        error_messages={
+            'min_length': 'Username must be at least 5 characters.',
+            'max_length': 'Username must be at most 100 characters.',
+        }
+    )
+    password = serializers.CharField(required=True, max_length=20)
+
+    def validate_username(self, username):
+        if User.objects.filter(username=username).exists():
+            raise ConflictError('Username already in use.')
+        return username
