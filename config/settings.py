@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 import os
 from pathlib import Path
+from datetime import date
 
 from dotenv import load_dotenv
 
@@ -111,10 +112,6 @@ LOGGING = {
         },
     },
     "filters": {
-        "special": {
-            "()": "project.logging.SpecialFilter",
-            "foo": "bar",
-        },
         "require_debug_true": {
             "()": "django.utils.log.RequireDebugTrue",
         },
@@ -124,32 +121,28 @@ LOGGING = {
             "level": "INFO",
             "filters": ["require_debug_true"],
             "class": "logging.StreamHandler",
-            "formatter": "simple",
+            "formatter": "verbose",
         },
         "in_file": {
             "level": "INFO",
-            
-        },
-        "mail_admins": {
-            "level": "ERROR",
-            "class": "django.utils.log.AdminEmailHandler",
-            "filters": ["special"],
-        },
+            "class": "logging.FileHandler",
+            "filename": f"./logs/{date.today()}.log",
+            "formatter": "verbose"
+        }
     },
     "loggers": {
         "django": {
-            "handlers": ["console"],
+            "handlers": ["console", "in_file"],
             "propagate": True,
         },
         "django.request": {
-            "handlers": ["mail_admins"],
-            "level": "ERROR",
+            "handlers": ["console", "in_file"],
+            "level": "INFO",
             "propagate": False,
         },
-        "myproject.custom": {
-            "handlers": ["console", "mail_admins"],
-            "level": "INFO",
-            "filters": ["special"],
+        "root": {
+            "handlers": ["console", "in_file"],
+            "level": "INFO"
         },
     },
 }
@@ -167,6 +160,7 @@ DATABASES = {
         'NAME': os.getenv('DATABASE_NAME'),
         'USER': os.getenv('DATABASE_USER'),
         'PASSWORD': os.getenv('DATABASE_PASSWORD'),
+        'HOST': os.getenv('DATABASE_HOST'),
         'PORT': os.getenv('DATABASE_PORT'),
     }
 }

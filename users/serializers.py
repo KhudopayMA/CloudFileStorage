@@ -1,10 +1,9 @@
 from django.contrib.auth.models import User
 from django.core.validators import RegexValidator
-from rest_framework import serializers, status
-from rest_framework.exceptions import ValidationError
-from rest_framework.validators import UniqueValidator
+from rest_framework import serializers
 
 from config.exceptions import ConflictError
+
 
 english_letter_validator = RegexValidator(
     regex=r'^[a-zA-Z0-9]+$',
@@ -18,11 +17,9 @@ class SignUpSerializer(serializers.Serializer):
         max_length=20,
         min_length=5,
         validators=[
-            # UniqueValidator(queryset=User.objects.all(), message='User with this username already exists.'),
             english_letter_validator,
         ],
         error_messages={
-            'unique': 'A user with that username already exists.',
             'min_length': 'Username must be at least 5 characters.',
             'max_length': 'Username must be at most 100 characters.',
         }
@@ -36,7 +33,6 @@ class SignUpSerializer(serializers.Serializer):
 
 
 class SignInSerializer(serializers.Serializer):
-    # TODO думаю стоит убрать повтряющийся сериализатор
     username = serializers.CharField(
         required=True,
         max_length=20,
@@ -50,8 +46,3 @@ class SignInSerializer(serializers.Serializer):
         }
     )
     password = serializers.CharField(required=True, max_length=20)
-
-    def validate_username(self, username):
-        if User.objects.filter(username=username).exists():
-            raise ConflictError('Username already in use.')
-        return username
