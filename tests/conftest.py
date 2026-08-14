@@ -7,7 +7,6 @@ from django.conf import settings
 @pytest.fixture
 def db_container() -> PostgresContainer:
     with PostgresContainer("postgres:18.4") as postgres:
-
         yield postgres
 
 

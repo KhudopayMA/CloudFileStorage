@@ -24,6 +24,7 @@ class SignUpView(APIView):
         response = Response(serializer.data["username"], status=status.HTTP_201_CREATED)
         return response
 
+
 class SignInView(APIView):
     permission_classes = [AllowAny]
 
