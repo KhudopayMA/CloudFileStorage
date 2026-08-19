@@ -6,15 +6,15 @@ from rest_framework.views import exception_handler
 from config.exceptions import ConflictError
 
 
-def handle_validation_error(exc, context) -> Response:
+def handle_validation_error(exc, context) -> Response: # type: ignore[no-untyped-def]
     return Response({'message': exc.detail.values()}, status=status.HTTP_400_BAD_REQUEST)
 
 
-def handle_authentication_error(exc, context) -> Response:
+def handle_authentication_error(exc, context) -> Response: # type: ignore[no-untyped-def]
     return Response({'message': exc.detail}, status=status.HTTP_401_UNAUTHORIZED)
 
 
-def handle_conflict_error(exc, context) -> Response:
+def handle_conflict_error(exc, context) -> Response: # type: ignore[no-untyped-def]
     return Response({'message': exc.detail}, status=status.HTTP_409_CONFLICT)
 
 
@@ -25,7 +25,7 @@ exception_mapper = {
 }
 
 
-def custom_exception_handler(exc, context):
+def custom_exception_handler(exc, context) -> Response | None: # type: ignore[no-untyped-def]
 
     try:
         exc_handler = exception_mapper[type(exc)]

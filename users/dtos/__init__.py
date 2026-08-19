@@ -1,1 +1,1 @@
-from .user_credentials_dto import UserCredentialsDto
+from .user_credentials_dto import UserCredentialsDto as UserCredentialsDto

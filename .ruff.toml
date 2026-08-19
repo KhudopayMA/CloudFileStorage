@@ -12,7 +12,7 @@ exclude = [
     "manage.py",
 ]
 
-line-length = 79
+line-length = 88
 target-version = "py312"
 
 [lint]

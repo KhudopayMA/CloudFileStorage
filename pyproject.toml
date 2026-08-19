@@ -5,12 +5,10 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "boto3>=1.43.70",
     "django-cors-headers>=4.9.0",
     "djangorestframework>=3.17.1",
     "drf-spectacular>=0.30.0",
-    "psycopg>=3.3.4",
-    "psycopg2>=2.9.12",
+    "psycopg[binary]>=3.3.4",
     "python-dotenv>=1.2.2",
     "redis>=8.1.0",
 ]
@@ -22,7 +20,8 @@ dev = [
     "djangorestframework-stubs[compatible-mypy]>=3.17.0",
     "mypy>=2.1.0",
     "pytest>=9.1.1",
-    "pytest-django[django]>=4.14.0",
+    "pytest-cov>=7.1.0",
+    "pytest-django>=4.14.0",
     "ruff>=0.16.0",
     "testcontainers>=4.15.0",
     "typos>=1.48.0",
@@ -35,5 +34,21 @@ plugins = [
     "mypy_drf_plugin.main",
 ]
 
+[[tool.mypy.overrides]]
+module = "test_plus.*"
+ignore_missing_imports = true
+
 [tool.django-stubs]
 django_settings_module = "config.settings"
+
+[tool.coverage.run]
+omit = [
+    "*/config/*",
+    "*/migrations/*",
+    "__init__.py",
+    "urls.py",
+    "manage.py",
+    "models.py",
+    "apps.py",
+    "admin.py"
+]
