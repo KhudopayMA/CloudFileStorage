@@ -44,35 +44,7 @@ class S3BucketService:
 
     def delete_resource(self, path: str) -> None:
         self.client.delete_object(Bucket="user-files", Key=path)
-        # attributes = ['ETag', 'Checksum', 'ObjectParts', 'StorageClass', 'ObjectSize']
-        # object_attributes = self.client.get_object_attributes(
-        #     Bucket="user-files",
-        #     Key=path,
-        #     ObjectAttributes=attributes
-        # )
-        # return object_attributes
-        # paginator = self.client.get_paginator('list_objects_v2')
-        # for page in paginator.paginate(Bucket="user-files"):
-        #     for obj in page.get('Contents', ):
-        #         print(obj['Key'])
 
-    # def create_file(self, file, path):
-    #     self.client.upload_file(f, "user-files", "test.txt")
-    #
-    # def delete_file(self):
-    #     pass
-    #
-    # def rename_file(self):
-    #     pass
-    #
-    # def rename_folder(self):
-    #     pass
-    #
-    # def get_structure(self):
-    #     response = self.client.list_objects_v2(Bucket='user-files', Prefix='user-1-files')
-    #     for obj in response["Contents"]:
-    #         print(obj["Key"])
-
-# s3 = S3BucketService()
-# s3.get_structure()
-# s3.create_file()
+    def download_resource(self, path: str) -> bytes:
+        obj = self.client.get_object(Bucket="user-files", Key=path)
+        return obj["Body"].read()

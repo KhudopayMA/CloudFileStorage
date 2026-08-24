@@ -1,5 +1,6 @@
 from dataclasses import asdict
 
+from django.http import FileResponse
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
@@ -25,3 +26,12 @@ class ResourceView(APIView):
         s3_service = S3BucketService()
         s3_service.delete_resource(request.query_params["path"])
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+class ResourceDownloadView(APIView):
+
+    permission_classes = [AllowAny]
+
+    def get(self, request: Request) -> FileResponse:
+        s3_service = S3BucketService()
+        resource = s3_service.download_resource(request.query_params["path"])
+        return FileResponse(resource, content_type="application/octet-stream", status=status.HTTP_200_OK)
