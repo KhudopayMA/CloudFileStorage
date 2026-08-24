@@ -3,8 +3,12 @@ import os
 import dotenv
 import boto3
 
+from cloud.dtos import ResourceMetaDto
+from config.exceptions import NotFound
+
 dotenv.load_dotenv()
 
+# TODO Prefix - часть key, можно использовать как аналог папки
 
 class S3BucketService:
 
@@ -20,18 +24,37 @@ class S3BucketService:
         )
         return client
 
-    def get_resource_meta(self, path: str):
-        attributes = ['ETag', 'Checksum', 'ObjectParts', 'StorageClass', 'ObjectSize']
+    def get_resource_meta(self, path: str) -> ResourceMetaDto:
+        # todo сделать получение только данных которых нет в бд
+        if path.endswith("/"):
+            objects = self.client.list_objects_v2(
+                Bucket="user-files",
+                Prefix=path
+            )
+            for obj in objects["Contents"]:
+                print(obj)
+
+        obj = self.client.head_object(Bucket="user-files", Key=path)
+        return ResourceMetaDto(
+            path=path[0:path.rfind("/")+1],
+            name=path[path.rfind("/")+1:],
+            size=obj["ContentLength"],
+            type="FILE"
+        )
+
+    def delete_resource(self, path: str) -> None:
+        self.client.delete_object(Bucket="user-files", Key=path)
+        # attributes = ['ETag', 'Checksum', 'ObjectParts', 'StorageClass', 'ObjectSize']
         # object_attributes = self.client.get_object_attributes(
         #     Bucket="user-files",
         #     Key=path,
         #     ObjectAttributes=attributes
         # )
         # return object_attributes
-        paginator = self.client.get_paginator('list_objects_v2')
-        for page in paginator.paginate(Bucket="user-files"):
-            for obj in page.get('Contents', ):
-                print(obj['Key'])
+        # paginator = self.client.get_paginator('list_objects_v2')
+        # for page in paginator.paginate(Bucket="user-files"):
+        #     for obj in page.get('Contents', ):
+        #         print(obj['Key'])
 
     # def create_file(self, file, path):
     #     self.client.upload_file(f, "user-files", "test.txt")
