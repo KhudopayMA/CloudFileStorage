@@ -48,3 +48,24 @@ class S3BucketService:
     def download_resource(self, path: str) -> bytes:
         obj = self.client.get_object(Bucket="user-files", Key=path)
         return obj["Body"].read()
+
+    def upload_resource(self, path: str, file_body: bytes, file_content_type: str):
+        self.client.put_object(
+            Body=file_body,
+            Bucket="user-files",
+            Key=path,
+            ContentType=file_content_type
+        )
+
+    def move_resource(self, from_path: str, to_path: str) -> None:
+        self.client.copy_object(
+            Bucket="user-files",
+            Key=to_path,
+            CopySource={
+                "Bucket": "user-files",
+                "Key": from_path
+            }
+        )
+        self.delete_resource(from_path)
+
+
