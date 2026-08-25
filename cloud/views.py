@@ -2,7 +2,7 @@ from dataclasses import asdict
 
 from django.http import FileResponse
 from rest_framework import status
-from rest_framework.parsers import FileUploadParser, JSONParser, MultiPartParser
+from rest_framework.parsers import JSONParser, MultiPartParser
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 from rest_framework.request import Request

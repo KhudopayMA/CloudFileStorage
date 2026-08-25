@@ -4,11 +4,9 @@ import dotenv
 import boto3
 
 from cloud.dtos import ResourceMetaDto
-from config.exceptions import NotFound
 
 dotenv.load_dotenv()
 
-# TODO Prefix - часть key, можно использовать как аналог папки
 
 class S3BucketService:
 
@@ -25,7 +23,6 @@ class S3BucketService:
         return client
 
     def get_resource_meta(self, path: str) -> ResourceMetaDto:
-        # todo сделать получение только данных которых нет в бд
         if path.endswith("/"):
             objects = self.client.list_objects_v2(
                 Bucket="user-files",
