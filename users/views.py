@@ -53,7 +53,7 @@ class SignOutView(APIView):
 
 
 class MeView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request: Request) -> Response:
         return Response({"username": request.user.username})

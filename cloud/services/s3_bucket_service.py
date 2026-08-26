@@ -22,7 +22,7 @@ class S3BucketService:
         )
         return client
 
-    def get_resource_meta(self, path: str) -> ResourceMetaDto:
+    def get_object_meta(self, path: str) -> ResourceMetaDto:
         if path.endswith("/"):
             objects = self.client.list_objects_v2(
                 Bucket="user-files",
@@ -39,14 +39,14 @@ class S3BucketService:
             type="FILE"
         )
 
-    def delete_resource(self, path: str) -> None:
+    def delete_object(self, path: str) -> None:
         self.client.delete_object(Bucket="user-files", Key=path)
 
-    def download_resource(self, path: str) -> bytes:
+    def download_object(self, path: str) -> bytes:
         obj = self.client.get_object(Bucket="user-files", Key=path)
         return obj["Body"].read()
 
-    def upload_resource(self, path: str, file_body: bytes, file_content_type: str):
+    def upload_object(self, path: str, file_body: bytes, file_content_type: str):
         self.client.put_object(
             Body=file_body,
             Bucket="user-files",
@@ -54,7 +54,7 @@ class S3BucketService:
             ContentType=file_content_type
         )
 
-    def move_resource(self, from_path: str, to_path: str) -> None:
+    def move_object(self, from_path: str, to_path: str) -> None:
         self.client.copy_object(
             Bucket="user-files",
             Key=to_path,
@@ -63,6 +63,6 @@ class S3BucketService:
                 "Key": from_path
             }
         )
-        self.delete_resource(from_path)
+        self.delete_object(from_path)
 
 
