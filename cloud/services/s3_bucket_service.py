@@ -3,7 +3,8 @@ import os
 import dotenv
 import boto3
 
-from cloud.dtos import ResourceMetaDto
+from cloud.dtos import ResourceMetaDto, DirectoryMetaDto
+from cloud.enums import ResourceTypes
 
 dotenv.load_dotenv()
 
@@ -24,20 +25,47 @@ class S3BucketService:
 
     def get_object_meta(self, path: str) -> ResourceMetaDto:
         if path.endswith("/"):
-            objects = self.client.list_objects_v2(
-                Bucket="user-files",
-                Prefix=path
-            )
-            for obj in objects["Contents"]:
-                print(obj)
-
-        obj = self.client.head_object(Bucket="user-files", Key=path)
+            resource_type = ResourceTypes.DIRECTORY
+        else:
+            resource_type = ResourceTypes.FILE
+        obj = self.client.head_object(
+            Bucket="user-files",
+            Key=path,
+        )
         return ResourceMetaDto(
             path=path[0:path.rfind("/")+1],
             name=path[path.rfind("/")+1:],
             size=obj["ContentLength"],
-            type="FILE"
+            type=resource_type
         )
+
+    def get_objects_meta(self, path: str) -> list[ResourceMetaDto | DirectoryMetaDto]:
+        response = self.client.list_objects_v2(
+            Bucket="user-files",
+            Prefix=path,
+            Delimiter="/"
+        )
+        objects = []
+        for obj in response.get("Contents"):
+            objects.append(
+                ResourceMetaDto(
+                    path=path,
+                    name=obj["Key"],
+                    size=obj["Size"],
+                    type=ResourceTypes.FILE
+                )
+            )
+
+        for obj in response.get("CommonPrefixes"):
+            objects.append(
+                DirectoryMetaDto(
+                    path=path,
+                    name=obj["Prefix"],
+                    type=ResourceTypes.DIRECTORY
+                )
+            )
+
+        return objects
 
     def delete_object(self, path: str) -> None:
         self.client.delete_object(Bucket="user-files", Key=path)
@@ -46,12 +74,13 @@ class S3BucketService:
         obj = self.client.get_object(Bucket="user-files", Key=path)
         return obj["Body"].read()
 
-    def upload_object(self, path: str, file_body: bytes, file_content_type: str):
+    def upload_object(self, path: str, object_body: bytes, object_content_type: str) -> None:
         self.client.put_object(
-            Body=file_body,
+            Body=object_body,
             Bucket="user-files",
             Key=path,
-            ContentType=file_content_type
+            ContentType=object_content_type,
+            IfNoneMatch="*"
         )
 
     def move_object(self, from_path: str, to_path: str) -> None:

@@ -7,3 +7,10 @@ class ResourceMetaDto:
     name: str
     size: int
     type: str
+
+
+@dataclass(slots=True, frozen=True, kw_only=True)
+class DirectoryMetaDto:
+    path: str
+    name: str
+    type: str

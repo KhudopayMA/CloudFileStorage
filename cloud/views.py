@@ -8,6 +8,8 @@ from rest_framework.views import APIView
 from rest_framework.request import Request
 from rest_framework.response import Response
 
+from cloud.dtos import ResourceMetaDto, DirectoryMetaDto
+from cloud.enums import ResourceTypes
 from cloud.serializers import PathSerializer
 from cloud.services import S3BucketService
 from cloud.services.cloud_service import CloudService
@@ -22,7 +24,7 @@ class ResourceView(APIView):
         serializer = PathSerializer(data=request.query_params)
         serializer.is_valid(raise_exception=True)
         s3_service = S3BucketService()
-        resource_meta = s3_service.get_resource_meta(serializer.validated_data["path"])
+        resource_meta = s3_service.get_object_meta(serializer.validated_data["path"])
         return Response(asdict(resource_meta))
 
     def post(self, request: Request) -> Response:
@@ -59,3 +61,26 @@ class ResourceMoveView(APIView):
         s3_service = S3BucketService()
         s3_service.move_resource(from_path=request.query_params["from"], to_path=request.query_params["to"])
         return Response(status=status.HTTP_200_OK)
+
+
+class DirectoryView(APIView):
+
+    permission_classes = [AllowAny]
+
+    def get(self, request: Request) -> Response:
+        cloud_service = CloudService()
+        path = request.query_params["path"]
+        directory_content = cloud_service.get_directory_content(path=path)
+        response_body = [asdict(obj) for obj in directory_content]
+        return Response(response_body, status=status.HTTP_200_OK)
+
+    def post(self, request: Request) -> Response:
+        cloud_service = CloudService()
+        path = request.query_params["path"]
+        cloud_service.create_directory(path=path)
+        response_body = DirectoryMetaDto(
+            path=path[0:path.rfind("/")+1],
+            name=path[path.rfind("/")+1:],
+            type=ResourceTypes.FILE
+        )
+        return Response(asdict(response_body), status=status.HTTP_201_CREATED)
