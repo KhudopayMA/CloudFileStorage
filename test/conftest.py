@@ -1,10 +1,12 @@
 from collections.abc import Iterator
 
 import pytest
+from django.conf import settings
 from django.core.management import call_command
 from testcontainers.community.postgres import PostgresContainer
 from testcontainers.community.redis import RedisContainer
 
+# mypy: ignore-errors
 
 @pytest.fixture(scope="session")
 def postgres_container() -> Iterator[PostgresContainer]:
@@ -24,14 +26,12 @@ def django_db_setup(  # type: ignore[no-untyped-def]
     redis_container: RedisContainer,
     django_db_blocker,
 ) -> None:
-    from django.conf import settings
-
     settings.DATABASES["default"]["ENGINE"] = "django.db.backends.postgresql"
     settings.DATABASES["default"]["NAME"] = postgres_container.dbname
     settings.DATABASES["default"]["USER"] = postgres_container.username
     settings.DATABASES["default"]["PASSWORD"] = postgres_container.password
     settings.DATABASES["default"]["HOST"] = postgres_container.get_container_host_ip()
-    settings.DATABASES["default"]["PORT"] = postgres_container.get_exposed_port(5432)  # type: ignore[assignmeаnt]
+    settings.DATABASES["default"]["PORT"] = postgres_container.get_exposed_port(5432)
     settings.DATABASES["default"]["ATOMIC_REQUESTS"] = False
 
     with django_db_blocker.unblock():

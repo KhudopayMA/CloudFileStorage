@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 import os
+import sys
 from pathlib import Path
 from datetime import date
 
@@ -57,8 +58,8 @@ INSTALLED_APPS = [
     "rest_framework",
     "corsheaders",
     'drf_spectacular',
-    "users.apps.UsersConfig",
-    "cloud.apps.CloudConfig"
+    'users.apps.UsersConfig',
+    'storage.apps.StorageConfig',
 ]
 
 REST_FRAMEWORK = {
@@ -113,38 +114,34 @@ LOGGING = {
             "style": "{",
         },
     },
-    "filters": {
-        "require_debug_true": {
-            "()": "django.utils.log.RequireDebugTrue",
-        },
-    },
     "handlers": {
-        "console": {
+        "console_stdout": {
             "level": "INFO",
-            "filters": ["require_debug_true"],
             "class": "logging.StreamHandler",
+            "stream": sys.stdout,
             "formatter": "verbose",
         },
-        "in_file": {
-            "level": "INFO",
-            "class": "logging.FileHandler",
-            "filename": f"./logs/{date.today()}.log",
-            "formatter": "verbose"
-        }
+        "console_stderr": {
+            "level": "ERROR",
+            "class": "logging.StreamHandler",
+            "stream": sys.stderr,
+            "formatter": "verbose",
+        },
     },
     "loggers": {
         "django": {
-            "handlers": ["console", "in_file"],
+            "handlers": ["console_stdout", "console_stderr"],
+            "level": "INFO",
             "propagate": True,
         },
         "django.request": {
-            "handlers": ["console", "in_file"],
+            "handlers": ["console_stdout", "console_stderr"],
             "level": "INFO",
             "propagate": False,
         },
         "root": {
-            "handlers": ["console", "in_file"],
-            "level": "INFO"
+            "handlers": ["console_stdout", "console_stderr"],
+            "level": "INFO",
         },
     },
 }
@@ -185,6 +182,9 @@ AUTH_PASSWORD_VALIDATORS = [
     },
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'OPTIONS': {
+            'min_length': 5
+        }
     },
     {
         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',

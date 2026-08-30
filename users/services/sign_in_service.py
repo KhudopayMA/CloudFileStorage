@@ -17,7 +17,7 @@ def sign_in_user(user_credentials: UserCredentialsDto, request: Request) -> None
     user = authenticate(request, **asdict(user_credentials))
     if user is not None:
         login(request, user)
-        logger.info(f"The user {user_credentials.username} is logged in")
+        logger.info("The user %s is logged in", user_credentials.username)
     else:
-        logger.info(f"The user {user_credentials.username} failed to log in")
+        logger.info("The user %s failed to log in", user_credentials.username)
         raise AuthenticationFailed("Wrong username or password")

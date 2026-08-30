@@ -29,6 +29,8 @@ select = [
     "SIM",
     # isort
     "I",
+    # logging-f-string
+    "G004"
 ]
 
 [format]

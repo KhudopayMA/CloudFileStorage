@@ -1,10 +1,9 @@
 from typing import Any
 
-from django.contrib.auth.models import User
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from rest_framework import serializers
-
-from config.exceptions import ConflictError
 
 english_letter_validator = RegexValidator(
     regex=r"^[a-zA-Z0-9]+$",
@@ -25,12 +24,16 @@ class SignUpSerializer(serializers.Serializer[Any]):
             "max_length": "Username must be at most 100 characters.",
         },
     )
-    password = serializers.CharField(required=True, max_length=20, min_length=5)
+    password = serializers.CharField(
+        max_length=20, min_length=5, write_only=True, required=True
+    )
 
-    def validate_username(self, username: str) -> str:
-        if User.objects.filter(username=username).exists():
-            raise ConflictError("Username already in use.")
-        return username
+    def validate_password(self, password: str) -> str :
+        try:
+            validate_password(password)
+            return password
+        except ValidationError as e:
+            raise serializers.ValidationError(e.messages) from e
 
 
 class SignInSerializer(serializers.Serializer[Any]):
@@ -44,4 +47,13 @@ class SignInSerializer(serializers.Serializer[Any]):
             "max_length": "Username must be at most 100 characters.",
         },
     )
-    password = serializers.CharField(required=True, max_length=20)
+    password = serializers.CharField(
+        max_length=20, min_length=5, write_only=True, required=True
+    )
+
+    def validate_password(self, password: str) -> str:
+        try:
+            validate_password(password)
+            return password
+        except ValidationError as e:
+            raise serializers.ValidationError(e.messages) from e

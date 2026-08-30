@@ -3,13 +3,13 @@ import os
 import dotenv
 import boto3
 
-from cloud.dtos import ResourceMetaDto, DirectoryMetaDto
-from cloud.enums import ResourceTypes
+from storage.dtos import ResourceMetaDto, DirectoryMetaDto, FileDto
+from storage.enums import ResourceTypes
 
 dotenv.load_dotenv()
 
 
-class S3BucketService:
+class S3Service:
 
     def __init__(self):
         self.client = self._create_client()
@@ -47,23 +47,24 @@ class S3BucketService:
         )
         objects = []
         for obj in response.get("Contents"):
-            objects.append(
-                ResourceMetaDto(
-                    path=path,
-                    name=obj["Key"],
-                    size=obj["Size"],
-                    type=ResourceTypes.FILE
+            if obj["Key"] != path:
+                objects.append(
+                    ResourceMetaDto(
+                        path=path[path.find("/")+1:path.rfind("/")+1],
+                        name=obj["Key"][obj["Key"].rfind("/")+1:],
+                        size=obj["Size"],
+                        type=ResourceTypes.FILE
+                    )
                 )
-            )
-
-        for obj in response.get("CommonPrefixes"):
-            objects.append(
-                DirectoryMetaDto(
-                    path=path,
-                    name=obj["Prefix"],
-                    type=ResourceTypes.DIRECTORY
+        if "CommonPrefixes" in response:
+            for obj in response.get("CommonPrefixes"):
+                objects.append(
+                    DirectoryMetaDto(
+                        path=path[path.find("/")+1:path.rfind("/")+1],
+                        name=obj["Prefix"][obj["Prefix"].rfind("/", 0, len(obj["Prefix"])-1)+1:],
+                        type=ResourceTypes.DIRECTORY
+                    )
                 )
-            )
 
         return objects
 
@@ -73,6 +74,24 @@ class S3BucketService:
     def download_object(self, path: str) -> bytes:
         obj = self.client.get_object(Bucket="user-files", Key=path)
         return obj["Body"].read()
+
+    def download_objects(self, prefix: str) -> list[FileDto]:
+        objects = self.client.list_objects_v2(
+            Bucket="user-files",
+            Prefix=prefix,
+            Delimiter="/"
+        )
+        objects_content = []
+        for obj in objects["Contents"]:
+            if not obj["Key"].endswith("/"):
+                obj_content = self.download_object(obj["Key"])
+                objects_content.append(
+                    FileDto(
+                        name=obj["Key"][obj["Key"].rfind("/")+1:],
+                        content=obj_content,
+                    )
+                )
+        return objects_content
 
     def upload_object(self, path: str, object_body: bytes, object_content_type: str) -> None:
         self.client.put_object(

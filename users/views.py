@@ -17,12 +17,12 @@ class SignUpView(APIView):
         serializer = SignUpSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user_credentials = UserCredentialsDto(
-            username=serializer.validated_data["username"],
-            password=serializer.validated_data["password"],
+            username=request.data["username"],
+            password=request.data["password"],
         )
         sign_up_user(user_credentials, request)
         response = Response(
-            {"username": serializer.data["username"]}, status=status.HTTP_201_CREATED
+            {"username": request.data["username"]}, status=status.HTTP_201_CREATED
         )
         return response
 
@@ -34,13 +34,11 @@ class SignInView(APIView):
         serializer = SignInSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user_credentials = UserCredentialsDto(
-            username=serializer.validated_data["username"],
-            password=serializer.validated_data["password"],
+            username=request.data["username"],
+            password=request.data["password"],
         )
         sign_in_user(user_credentials, request)
-        response = Response(
-            {"username": user_credentials.username}, status=status.HTTP_200_OK
-        )
+        response = Response({"username": request.data["username"]}, status=status.HTTP_200_OK)
         return response
 
 

@@ -1,6 +1,7 @@
 from django.urls import path
 
-from cloud.views import ResourceView, ResourceDownloadView, ResourceMoveView, DirectoryView
+from storage.views import ResourceView, ResourceDownloadView, ResourceMoveView, DirectoryView
+
 
 urlpatterns = [
     path("resource", ResourceView.as_view(), name="resource"),
