@@ -8,21 +8,21 @@ from rest_framework.views import APIView
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from storage.dtos import ResourceMetaDto, DirectoryMetaDto
+from storage.dtos import ResourceMetaDto
 from storage.enums import ResourceTypes
 from storage.serializers import CreateFolderSerializer
-from storage.services import S3Service, StorageService
+from storage.services import StorageService
 
 
 class ResourceView(APIView):
 
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, JSONParser]
 
     def get(self, request: Request) -> Response:
-        path = request.data["path"]
-        s3_service = S3Service()
-        resource_meta = s3_service.get_object_meta(path)
+        path = request.query_params["path"]
+        storage_service = StorageService()
+        resource_meta = storage_service.get_resource_meta(path=path, user_id=request.user.id)
         return Response(asdict(resource_meta))
 
     def post(self, request: Request) -> Response:
@@ -51,7 +51,7 @@ class ResourceView(APIView):
 
 class ResourceDownloadView(APIView):
 
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request: Request) -> FileResponse:
         storage_service = StorageService()
@@ -65,12 +65,16 @@ class ResourceDownloadView(APIView):
 
 class ResourceMoveView(APIView):
 
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request: Request) -> Response:
         storage_service = StorageService()
-        storage_service.move_resource(from_path=request.query_params["from"], to_path=request.query_params["to"])
-        return Response(status=status.HTTP_200_OK)
+        resource_meta = storage_service.move_resource(
+            from_path=request.query_params["from"],
+            to_path=request.query_params["to"],
+            user_id=request.user.id
+        )
+        return Response(asdict(resource_meta), status=status.HTTP_200_OK)
 
 
 class DirectoryView(APIView):

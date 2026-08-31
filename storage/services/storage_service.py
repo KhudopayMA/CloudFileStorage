@@ -5,7 +5,7 @@ from io import BytesIO
 from botocore.exceptions import ClientError
 from rest_framework.exceptions import APIException
 
-from storage.dtos import DirectoryMetaDto
+from storage.dtos import DirectoryMetaDto, ResourceMetaDto
 from storage.enums import ResourceTypes
 from storage.services import S3Service
 from config.exceptions import ConflictError, NotFound
@@ -17,6 +17,10 @@ class StorageService:
 
     def __init__(self):
         self.s3_service = S3Service()
+
+    def get_resource_meta(self, path: str, user_id: int) -> ResourceMetaDto | DirectoryMetaDto:
+        user_path = f"user-{user_id}-files/" + path
+        return self.s3_service.get_object_meta(path=user_path)
 
     def create_directory(self, path: str, user_id: int) -> DirectoryMetaDto:
         user_path = f"user-{user_id}-files/" + path
@@ -40,9 +44,9 @@ class StorageService:
                 object_content_type="application/x-directory"
             )
             return DirectoryMetaDto(
-                path=user_path,
-                name=path[path.rfind("/")+1:],
-                type=ResourceTypes.FILE
+                path=path[path.find("/"):path.rfind("/", 0, len(path) - 1) + 1],
+                name=path[path.rfind("/", 0, len(path) - 1) + 1:len(path) - 1],
+                type=ResourceTypes.DIRECTORY
             )
         except ClientError as e:
             if e.response["Error"]["Code"] == "PreconditionFailed":
@@ -108,13 +112,12 @@ class StorageService:
         user_path = f"user-{user_id}-files/" + path
         self.s3_service.delete_object(path=user_path)
 
-    # def get_resource(self, path: str) -> ResourceMetaDto:
-    #     # TODO обавить получение файлов из директории и формирование zip
-    #     # if path.endswith("/"):
-    #     #
-    #
-    #     file = self.s3_service.download_object(path)
-    #     return file
-
-    # def move_resource(self, from_path: str, to_path: str):
-    #     pass
+    def move_resource(self, from_path: str, to_path: str, user_id: int) -> ResourceMetaDto | DirectoryMetaDto:
+        user_from_path = f"user-{user_id}-files/" + from_path
+        user_to_path = f"user-{user_id}-files/" + to_path
+        self.s3_service.move_object(
+            from_path=user_from_path,
+            to_path=user_to_path)
+        return self.s3_service.get_object_meta(path=user_to_path)
+        #TODO перемещаемый ресурс может быть как файлом, как и директорией, из-за чего необхимо переместить все внутренние объекты
+        #TODO при переримновании файла нужно только поменять имя, а при переименовании директории поменять у всех вложенных объектов путь

@@ -23,21 +23,24 @@ class S3Service:
         )
         return client
 
-    def get_object_meta(self, path: str) -> ResourceMetaDto:
-        if path.endswith("/"):
-            resource_type = ResourceTypes.DIRECTORY
-        else:
-            resource_type = ResourceTypes.FILE
+    def get_object_meta(self, path: str) -> ResourceMetaDto | DirectoryMetaDto:
         obj = self.client.head_object(
             Bucket="user-files",
             Key=path,
         )
-        return ResourceMetaDto(
-            path=path[0:path.rfind("/")+1],
-            name=path[path.rfind("/")+1:],
-            size=obj["ContentLength"],
-            type=resource_type
-        )
+        if path.endswith("/"):
+            return DirectoryMetaDto(
+                path=path[path.find("/"):path.rfind("/", 0, len(path) - 1)+1],
+                name=path[path.rfind("/", 0, len(path) - 1) + 1:len(path)-1],
+                type=ResourceTypes.DIRECTORY
+            )
+        else:
+            return ResourceMetaDto(
+                path=path[path.find("/") + 1:path.rfind("/") + 1],
+                name=path[path.rfind("/") + 1:],
+                size=obj["ContentLength"],
+                type=ResourceTypes.FILE
+            )
 
     def get_objects_meta(self, path: str) -> list[ResourceMetaDto | DirectoryMetaDto]:
         response = self.client.list_objects_v2(
@@ -103,14 +106,34 @@ class S3Service:
         )
 
     def move_object(self, from_path: str, to_path: str) -> None:
-        self.client.copy_object(
-            Bucket="user-files",
-            Key=to_path,
-            CopySource={
-                "Bucket": "user-files",
-                "Key": from_path
-            }
-        )
-        self.delete_object(from_path)
+        if from_path.endswith("/"):
+            objects = self.client.list_objects_v2(
+                Bucket="user-files",
+                Prefix=from_path,
+            )
+            for obj in objects["Contents"]:
+                if obj["Key"] != from_path:
+                    new_path = to_path + obj["Key"][obj["Key"].rfind("/", 0, len(obj["Key"])-1)+1:]
+                else:
+                    new_path = to_path
+                self.client.copy_object(
+                    Bucket="user-files",
+                    Key=new_path,
+                    CopySource={
+                        "Bucket": "user-files",
+                        "Key": obj["Key"]
+                    }
+                )
+                self.delete_object(obj["Key"])
+        else:
+            self.client.copy_object(
+                Bucket="user-files",
+                Key=to_path,
+                CopySource={
+                    "Bucket": "user-files",
+                    "Key": from_path
+                }
+            )
+            self.delete_object(from_path)
 
 

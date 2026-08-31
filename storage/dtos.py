@@ -15,6 +15,7 @@ class DirectoryMetaDto:
     name: str
     type: str
 
+
 @dataclass(slots=True, frozen=True, kw_only=True)
 class FileDto:
     name: str
