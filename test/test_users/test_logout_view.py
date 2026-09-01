@@ -5,7 +5,6 @@ from test.factories import UserFactory
 # mypy: ignore-errors
 
 
-
 class TestLogoutView(APITestCase):
     def setUp(self) -> None:
         self.password = "testpassword12345"
