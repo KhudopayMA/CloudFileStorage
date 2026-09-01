@@ -60,7 +60,7 @@ class StorageService:
     def get_directory_content(self, path: str, user_id: int):
         user_path = f"user-{user_id}-files/" + path
         try:
-            return self.s3_service.get_objects_meta(path=user_path)
+            return self.s3_service.get_objects_meta(path=user_path, delimiter="/")
         except ClientError as e:
             error_code = e.response["Error"]["Code"]
             if error_code == "404":
@@ -119,5 +119,12 @@ class StorageService:
             from_path=user_from_path,
             to_path=user_to_path)
         return self.s3_service.get_object_meta(path=user_to_path)
-        #TODO перемещаемый ресурс может быть как файлом, как и директорией, из-за чего необхимо переместить все внутренние объекты
-        #TODO при переримновании файла нужно только поменять имя, а при переименовании директории поменять у всех вложенных объектов путь
+
+    def search_resources(self, substring: str, user_id: int) -> list[ResourceMetaDto | DirectoryMetaDto]:
+        user_dir_path = f"user-{user_id}-files/"
+        user_resources = self.s3_service.get_objects_meta(user_dir_path)
+        suitable_resources = []
+        for resource in user_resources:
+            if substring in resource.path+resource.name:
+                suitable_resources.append(resource)
+        return suitable_resources

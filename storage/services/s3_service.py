@@ -42,23 +42,31 @@ class S3Service:
                 type=ResourceTypes.FILE
             )
 
-    def get_objects_meta(self, path: str) -> list[ResourceMetaDto | DirectoryMetaDto]:
+    def get_objects_meta(self, path: str, delimiter: str = "") -> list[ResourceMetaDto | DirectoryMetaDto]:
         response = self.client.list_objects_v2(
             Bucket="user-files",
             Prefix=path,
-            Delimiter="/"
+            Delimiter=delimiter
         )
         objects = []
         for obj in response.get("Contents"):
             if obj["Key"] != path:
-                objects.append(
-                    ResourceMetaDto(
-                        path=path[path.find("/")+1:path.rfind("/")+1],
-                        name=obj["Key"][obj["Key"].rfind("/")+1:],
-                        size=obj["Size"],
-                        type=ResourceTypes.FILE
+                if obj["Key"].endswith("/"):
+                    objects.append(DirectoryMetaDto(
+                            path=path[path.find("/")+1:path.rfind("/")+1],
+                            name=obj["Key"][obj["Key"].rfind("/", 0, len(obj["Key"])-1)+1:],
+                            type=ResourceTypes.DIRECTORY
+                        )
                     )
-                )
+                else:
+                    objects.append(
+                        ResourceMetaDto(
+                            path=path[path.find("/")+1:path.rfind("/")+1],
+                            name=obj["Key"][obj["Key"].rfind("/")+1:],
+                            size=obj["Size"],
+                            type=ResourceTypes.FILE
+                        )
+                    )
         if "CommonPrefixes" in response:
             for obj in response.get("CommonPrefixes"):
                 objects.append(

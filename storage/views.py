@@ -77,6 +77,19 @@ class ResourceMoveView(APIView):
         return Response(asdict(resource_meta), status=status.HTTP_200_OK)
 
 
+class ResourceResearchView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request: Request) -> Response:
+        storage_service = StorageService()
+        resources_meta = storage_service.search_resources(
+            request.query_params["query"], user_id=request.user.id
+        )
+        response_body = [asdict(resource) for resource in resources_meta]
+        return Response(response_body, status=status.HTTP_200_OK)
+
+
 class DirectoryView(APIView):
 
     permission_classes = [IsAuthenticated]
