@@ -41,7 +41,7 @@ class ResourceView(APIView):
             size=file_obj.size,
             type=ResourceTypes.FILE
         )
-        return Response(asdict(response_body), status=status.HTTP_200_OK)
+        return Response(asdict(response_body), status=status.HTTP_201_CREATED)
 
     def delete(self, request: Request) -> Response:
         storage_service = StorageService()

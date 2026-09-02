@@ -20,12 +20,18 @@ class StorageService:
 
     def get_resource_meta(self, path: str, user_id: int) -> ResourceMetaDto | DirectoryMetaDto:
         user_path = f"user-{user_id}-files/" + path
-        return self.s3_service.get_object_meta(path=user_path)
+        try:
+            return self.s3_service.get_object_meta(path=user_path)
+        except ClientError as e:
+            error_code = e.response["Error"]["Code"]
+            if error_code == "404":
+                logger.warning(f"Resource {user_path} does not exist")
+                raise NotFound("Resource not found.") from e
 
     def create_directory(self, path: str, user_id: int) -> DirectoryMetaDto:
         user_path = f"user-{user_id}-files/" + path
         if path:
-            parent_dir_path = user_path[0:user_path.find("/") + 1]
+            parent_dir_path = user_path[0:user_path.rfind("/", 0, len(user_path)-1)+1]
             try:
                 self.s3_service.get_object_meta(path=parent_dir_path)
             except ClientError as e:
@@ -75,7 +81,7 @@ class StorageService:
         file_body: bytes
     ):
         user_path = f"user-{user_id}-files/" + path
-        directories = user_path.strip("/").split("/")
+        directories = path.strip("/").split("/")
         current_directory = ""
         for directory in directories:
             current_directory += directory + "/"
