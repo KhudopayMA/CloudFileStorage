@@ -34,7 +34,7 @@ exception_mapper = {
 }
 
 
-def custom_exception_handler(exc, context) -> Response | None: # type: ignore[no-untyped-def]
+def custom_exception_handler(exc, context) -> Response | None:  # type: ignore[no-untyped-def]
 
     try:
         exc_handler = exception_mapper[type(exc)]

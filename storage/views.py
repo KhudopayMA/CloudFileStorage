@@ -77,7 +77,7 @@ class ResourceMoveView(APIView):
         return Response(asdict(resource_meta), status=status.HTTP_200_OK)
 
 
-class ResourceResearchView(APIView):
+class ResourceSearchView(APIView):
 
     permission_classes = [IsAuthenticated]
 

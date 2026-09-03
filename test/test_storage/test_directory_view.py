@@ -2,11 +2,9 @@ from unittest import TestCase
 
 import pytest
 from django.contrib.auth.models import User
-from test_plus import APITestCase
-from rest_framework.test import force_authenticate, APIClient
+from rest_framework.test import APIClient
 
 from storage.enums import ResourceTypes
-from test.factories import UserFactory
 
 
 @pytest.mark.django_db

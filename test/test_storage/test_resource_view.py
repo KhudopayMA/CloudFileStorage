@@ -1,4 +1,3 @@
-import io
 from unittest import TestCase
 
 import pytest
