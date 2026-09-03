@@ -42,7 +42,6 @@ class StorageService:
                 else:
                     logger.error(f"Failed to found directory {parent_dir_path} in s3", exc_info=e)
                     raise APIException() from e
-                # TODO рейзить ошибку для 500 кода
         try:
             self.s3_service.upload_object(
                 path=user_path,
@@ -61,7 +60,6 @@ class StorageService:
             else:
                 logger.error(f"Failed to create directory {user_path} in s3", exc_info=e)
                 raise APIException() from e
-            # TODO рейзить ошибку для 500 кода
 
     def get_directory_content(self, path: str, user_id: int):
         user_path = f"user-{user_id}-files/" + path

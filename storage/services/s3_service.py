@@ -1,12 +1,9 @@
 import os
 
-import dotenv
 import boto3
 
 from storage.dtos import ResourceMetaDto, DirectoryMetaDto, FileDto
 from storage.enums import ResourceTypes
-
-dotenv.load_dotenv()
 
 
 class S3Service:
