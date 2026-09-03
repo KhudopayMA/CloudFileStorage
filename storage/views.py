@@ -98,7 +98,9 @@ class DirectoryView(APIView):
         storage_service = StorageService()
         path = request.query_params["path"]
         directory_content = storage_service.get_directory_content(path=path, user_id=request.user.id)
-        response_body = [asdict(obj) for obj in directory_content]
+        if directory_content is not None:
+            response_body = [asdict(obj) for obj in directory_content]
+        else: response_body = []
         return Response(response_body, status=status.HTTP_200_OK)
 
     def post(self, request: Request) -> Response:

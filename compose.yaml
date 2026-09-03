@@ -6,7 +6,7 @@ services:
     image: postgres:18.4
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "${DATABASE_PORT}:5432"
     environment:
       POSTGRES_DB: ${DATABASE_NAME}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
@@ -14,7 +14,10 @@ services:
     volumes:
       - db_data:/var/lib/postgresql
     healthcheck:
-      test: ["CMD", "pg_isready -U ${DATABASE_USER} -d ${DATABASE_NAME}"]
+      test: ["CMD", "pg_isready", "-U", "${DATABASE_USER}", "-d", "${DATABASE_NAME}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
 
   redis:
@@ -26,10 +29,69 @@ services:
     ports:
       - "6379:6379"
     healthcheck:
-      test: [ "CMD",  "redis-cli -a $REDIS_PASSWORD ping"]
+      test: ["CMD", "redis-cli", "-a", "$REDIS_PASSWORD", "ping"]
       interval: 30s
       timeout: 10s
       retries: 5
 
+  minio:
+    container_name: cloud-file-storage-minio
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z-cpuv1
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${AWS_ACCESS_KEY_ID}
+      MINIO_ROOT_PASSWORD: ${AWS_SECRET_ACCESS_KEY}
+      MINIO_DEFAULT_BUCKETS: "user-files"
+    ports:
+      - "9000:9000" # S3 API
+      - "9001:9001" # Web
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  minio-init:
+    image: minio/mc
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set minio http://minio:9000 ${AWS_ACCESS_KEY_ID} ${AWS_SECRET_ACCESS_KEY}; do
+        echo 'Waiting for MinIO...';
+        sleep 1;
+      done;
+      mc mb --ignore-existing minio/user-files;
+      exit 0;
+      "
+
+  cloud_file_storage:
+    container_name: cloud-file-storage
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image:
+      cloud_file_storage:1.0.0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    command: >
+      sh -c "uv run python manage.py migrate &&
+             uv run gunicorn config.wsgi:application --bind 0.0.0.0:8000"
+    env_file:
+      - .env
+    ports:
+      - "${APP_PORT}:8000"
+
+
 volumes:
   db_data:
+  minio_data:
