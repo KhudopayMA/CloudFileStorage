@@ -1,15 +1,15 @@
-import os
 from collections.abc import Iterator
 
 import pytest
-import boto3
-from django.conf import settings
 from django.core.management import call_command
 from testcontainers.community.minio import MinioContainer
 from testcontainers.community.postgres import PostgresContainer
 from testcontainers.community.redis import RedisContainer
 
+from config import settings
+
 # mypy: ignore-errors
+
 
 @pytest.fixture(scope="session")
 def postgres_container() -> Iterator[PostgresContainer]:
@@ -22,34 +22,24 @@ def redis_container() -> Iterator[RedisContainer]:
     with RedisContainer("redis:8.10.0") as redis:
         yield redis
 
-@pytest.fixture(scope="session")
+
+@pytest.fixture(scope="session", autouse=True)
 def minio_container() -> Iterator[MinioContainer]:
     with MinioContainer(
-            "minio/minio:RELEASE.2025-09-07T16-13-09Z-cpuv1",
-            access_key=os.getenv("AWS_ACCESS_KEY_ID"),
-            secret_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+            "minio/minio:RELEASE.2025-09-07T16-13-09Z-cpuv1"
     ) as minio:
 
-        container_config = minio.get_config()
-
-        os.environ["AWS_ENDPOINT_URL"] = f"http://{container_config['endpoint']}"
-
-
-        client = boto3.client(
-            "s3",
-            aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-            aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-            endpoint_url=os.getenv("AWS_ENDPOINT_URL"),
-        )
-
-        client.create_bucket(Bucket="user-files")
+        client = minio.get_client()
+        client.make_bucket("user-files")
 
         yield minio
+
 
 @pytest.fixture(scope="session")
 def django_db_setup(  # type: ignore[no-untyped-def]
     postgres_container: PostgresContainer,
     redis_container: RedisContainer,
+    minio_container: MinioContainer,
     django_db_blocker,
 ) -> None:
     settings.DATABASES["default"]["ENGINE"] = "django.db.backends.postgresql"
@@ -70,3 +60,8 @@ def django_db_setup(  # type: ignore[no-untyped-def]
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
         "LOCATION": f"redis://{redis_host}:{redis_port}/0",
     }
+
+    settings.AWS_ACCESS_KEY_ID = minio_container.get_config()["access_key"]
+    settings.AWS_SECRET_ACCESS_KEY = minio_container.get_config()["secret_key"]
+    settings.AWS_ENDPOINT_URL = f"http://{minio_container.get_config()["endpoint"]}"
+

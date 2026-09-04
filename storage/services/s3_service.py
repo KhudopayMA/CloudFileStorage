@@ -2,6 +2,7 @@ import os
 
 import boto3
 
+from config.settings import AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_ENDPOINT_URL
 from storage.dtos import ResourceMetaDto, DirectoryMetaDto, FileDto
 from storage.enums import ResourceTypes
 
@@ -14,9 +15,9 @@ class S3Service:
     def _create_client(self):
         client = boto3.client(
             "s3",
-            aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-            aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-            endpoint_url=os.getenv("AWS_ENDPOINT_URL"),
+            aws_access_key_id=AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+            endpoint_url=AWS_ENDPOINT_URL,
         )
         return client
 
