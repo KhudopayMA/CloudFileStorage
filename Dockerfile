@@ -1,4 +1,4 @@
-FROM python:3.12-alpine3.23
+FROM python:3.12
 
 RUN curl -LsSf https://astral.sh/uv/0.12.9/install.sh | sh
 
