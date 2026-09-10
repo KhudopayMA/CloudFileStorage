@@ -1,4 +1,5 @@
 import logging
+from typing import Any
 
 from rest_framework import status
 from rest_framework.exceptions import ValidationError, AuthenticationFailed, APIException
@@ -9,20 +10,19 @@ from config.exceptions import ConflictError, NotFound
 
 logger = logging.getLogger(__name__)
 
+def handle_validation_error(exc: APIException, context: dict[str, Any]) -> Response:
+    return Response({'message': exc.detail}, status=status.HTTP_400_BAD_REQUEST)
 
-def handle_validation_error(exc, context) -> Response:  # type: ignore[no-untyped-def]
-    return Response({'message': exc.detail.values()}, status=status.HTTP_400_BAD_REQUEST)
 
-
-def handle_authentication_error(exc, context) -> Response:  # type: ignore[no-untyped-def]
+def handle_authentication_error(exc: APIException, context: dict[str, Any]) -> Response:
     return Response({'message': exc.detail}, status=status.HTTP_401_UNAUTHORIZED)
 
 
-def handle_conflict_error(exc, context) -> Response:  # type: ignore[no-untyped-def]
+def handle_conflict_error(exc: APIException, context: dict[str, Any]) -> Response:
     return Response({'message': exc.detail}, status=status.HTTP_409_CONFLICT)
 
 
-def handle_not_found_error(exc, context) -> Response:  # type: ignore[no-untyped-def]
+def handle_not_found_error(exc: APIException, context: dict[str, Any]) -> Response:
     return Response({'message': exc.detail}, status=status.HTTP_404_NOT_FOUND)
 
 
@@ -34,7 +34,7 @@ exception_mapper = {
 }
 
 
-def custom_exception_handler(exc, context) -> Response | None:  # type: ignore[no-untyped-def]
+def custom_exception_handler(exc: APIException, context: dict[str, Any]) -> Response | None:  
 
     try:
         exc_handler = exception_mapper[type(exc)]

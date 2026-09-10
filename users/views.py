@@ -38,7 +38,9 @@ class SignInView(APIView):
             password=request.data["password"],
         )
         sign_in_user(user_credentials, request)
-        response = Response({"username": request.data["username"]}, status=status.HTTP_200_OK)
+        response = Response(
+            {"username": request.data["username"]}, status=status.HTTP_200_OK
+        )
         return response
 
 

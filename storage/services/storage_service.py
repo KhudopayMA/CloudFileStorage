@@ -2,66 +2,78 @@ import logging
 import zipfile
 from io import BytesIO
 
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError  #type: ignore[import-untyped]
 from rest_framework.exceptions import APIException
 
+from config.exceptions import ConflictError, NotFound
 from storage.dtos import DirectoryMetaDto, ResourceMetaDto
 from storage.enums import ResourceTypes
 from storage.services import S3Service
-from config.exceptions import ConflictError, NotFound
 
 logger = logging.getLogger(__name__)
 
 
 class StorageService:
-
-    def __init__(self):
+    def __init__(self) -> None:
         self.s3_service = S3Service()
 
-    def get_resource_meta(self, path: str, user_id: int) -> ResourceMetaDto | DirectoryMetaDto:
+    def get_resource_meta(
+        self, path: str, user_id: int
+    ) -> ResourceMetaDto | DirectoryMetaDto:
         user_path = f"user-{user_id}-files/" + path
         try:
             return self.s3_service.get_object_meta(path=user_path)
         except ClientError as e:
             error_code = e.response["Error"]["Code"]
             if error_code == "404":
-                logger.warning(f"Resource {user_path} does not exist")
+                logger.warning("Resource %s does not exist", user_path)
                 raise NotFound("Resource not found.") from e
+            raise e
 
     def create_directory(self, path: str, user_id: int) -> DirectoryMetaDto:
         user_path = f"user-{user_id}-files/" + path
         if path:
-            parent_dir_path = user_path[0:user_path.rfind("/", 0, len(user_path)-1)+1]
+            parent_dir_path = user_path[
+                0 : user_path.rfind("/", 0, len(user_path) - 1) + 1
+            ]
             try:
                 self.s3_service.get_object_meta(path=parent_dir_path)
             except ClientError as e:
                 error_code = e.response["Error"]["Code"]
                 if error_code == "404":
-                    logger.warning(f"Directory {parent_dir_path} does not exist")
+                    logger.warning("Directory %s does not exist", parent_dir_path)
                     raise NotFound("Parent directory not found.") from e
                 else:
-                    logger.error(f"Failed to found directory {parent_dir_path} in s3", exc_info=e)
+                    logger.error(
+                        "Failed to found directory % in s3", parent_dir_path, exc_info=e
+                    )
                     raise APIException() from e
         try:
             self.s3_service.upload_object(
                 path=user_path,
                 object_body=b"",
-                object_content_type="application/x-directory"
+                object_content_type="application/x-directory",
             )
             return DirectoryMetaDto(
-                path=path[path.find("/"):path.rfind("/", 0, len(path) - 1) + 1],
-                name=path[path.rfind("/", 0, len(path) - 1) + 1:len(path) - 1],
-                type=ResourceTypes.DIRECTORY
+                path=path[path.find("/") : path.rfind("/", 0, len(path) - 1) + 1],
+                name=path[path.rfind("/", 0, len(path) - 1) + 1 : len(path) - 1],
+                type=ResourceTypes.DIRECTORY,
             )
         except ClientError as e:
             if e.response["Error"]["Code"] == "PreconditionFailed":
-                logger.info(f"Directory {user_path} already exist")
+                logger.info("Directory %s already exist", user_path)
                 raise ConflictError("Directory already exists.") from e
             else:
-                logger.error(f"Failed to create directory {user_path} in s3", exc_info=e)
+                logger.error(
+                    "Failed to create directory %s in s3", user_path, exc_info=e
+                )
                 raise APIException() from e
 
-    def get_directory_content(self, path: str, user_id: int):
+    def get_directory_content(
+            self,
+            path: str,
+            user_id: int
+    ) -> list[ResourceMetaDto | DirectoryMetaDto]:
         user_path = f"user-{user_id}-files/" + path
         try:
             return self.s3_service.get_objects_meta(path=user_path, delimiter="/")
@@ -69,6 +81,7 @@ class StorageService:
             error_code = e.response["Error"]["Code"]
             if error_code == "404":
                 raise NotFound("Directory not found.") from e
+            raise e
 
     def create_file(
         self,
@@ -76,8 +89,8 @@ class StorageService:
         user_id: int,
         file_name: str,
         file_content_type: str,
-        file_body: bytes
-    ):
+        file_body: bytes,
+    ) -> None:
         user_path = f"user-{user_id}-files/" + path
         directories = path.strip("/").split("/")
         current_directory = ""
@@ -93,7 +106,7 @@ class StorageService:
             self.s3_service.upload_object(
                 path=user_path + file_name,
                 object_body=file_body,
-                object_content_type=file_content_type
+                object_content_type=file_content_type,
             )
         except ClientError as e:
             if e.response["Error"]["Code"] == "PreconditionFailed":
@@ -112,23 +125,25 @@ class StorageService:
         file_body = self.s3_service.download_object(path=user_path)
         return file_body
 
-    def delete_resource(self, path: str, user_id: int):
+    def delete_resource(self, path: str, user_id: int) -> None:
         user_path = f"user-{user_id}-files/" + path
         self.s3_service.delete_object(path=user_path)
 
-    def move_resource(self, from_path: str, to_path: str, user_id: int) -> ResourceMetaDto | DirectoryMetaDto:
+    def move_resource(
+        self, from_path: str, to_path: str, user_id: int
+    ) -> ResourceMetaDto | DirectoryMetaDto:
         user_from_path = f"user-{user_id}-files/" + from_path
         user_to_path = f"user-{user_id}-files/" + to_path
-        self.s3_service.move_object(
-            from_path=user_from_path,
-            to_path=user_to_path)
+        self.s3_service.move_object(from_path=user_from_path, to_path=user_to_path)
         return self.s3_service.get_object_meta(path=user_to_path)
 
-    def search_resources(self, substring: str, user_id: int) -> list[ResourceMetaDto | DirectoryMetaDto]:
+    def search_resources(
+        self, substring: str, user_id: int
+    ) -> list[ResourceMetaDto | DirectoryMetaDto]:
         user_dir_path = f"user-{user_id}-files/"
         user_resources = self.s3_service.get_objects_meta(user_dir_path)
         suitable_resources = []
         for resource in user_resources:
-            if substring in resource.path+resource.name:
+            if substring in resource.path + resource.name:
                 suitable_resources.append(resource)
         return suitable_resources

@@ -25,10 +25,7 @@ def redis_container() -> Iterator[RedisContainer]:
 
 @pytest.fixture(scope="session", autouse=True)
 def minio_container() -> Iterator[MinioContainer]:
-    with MinioContainer(
-            "minio/minio:RELEASE.2025-09-07T16-13-09Z-cpuv1"
-    ) as minio:
-
+    with MinioContainer("minio/minio:RELEASE.2025-09-07T16-13-09Z-cpuv1") as minio:
         client = minio.get_client()
         client.make_bucket("user-files")
 
@@ -63,5 +60,4 @@ def django_db_setup(  # type: ignore[no-untyped-def]
 
     settings.AWS_ACCESS_KEY_ID = minio_container.get_config()["access_key"]
     settings.AWS_SECRET_ACCESS_KEY = minio_container.get_config()["secret_key"]
-    settings.AWS_ENDPOINT_URL = f"http://{minio_container.get_config()["endpoint"]}"
-
+    settings.AWS_ENDPOINT_URL = f"http://{minio_container.get_config()['endpoint']}"

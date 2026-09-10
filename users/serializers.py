@@ -28,7 +28,7 @@ class SignUpSerializer(serializers.Serializer[Any]):
         max_length=20, min_length=5, write_only=True, required=True
     )
 
-    def validate_password(self, password: str) -> str :
+    def validate_password(self, password: str) -> str:
         try:
             validate_password(password)
             return password

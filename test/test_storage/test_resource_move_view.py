@@ -18,19 +18,13 @@ class TestResourceView(TestCase):
         self.user = User.objects.get(username=data["username"])
         self.client.force_authenticate(user=self.user)
 
-    def test_rename_file(self):
-        file = SimpleUploadedFile(
-            name="test.txt",
-            content=b"Test file"
-        )
+
+    def test_rename_file(self) -> None:
+        file = SimpleUploadedFile(name="test.txt", content=b"Test file")
         create_file_response = self.client.post(
-            "/api/resource",
-            data={
-                "object": file,
-                "path": ""
-            },
-            extra={"format": "json"}
+            "/api/resource", data={"object": file, "path": ""}, extra={"format": "json"}
         )
+
         assert create_file_response.status_code == 201
         assert create_file_response.data["path"] == ""
         assert create_file_response.data["name"] == file.name
@@ -39,12 +33,10 @@ class TestResourceView(TestCase):
 
         move_file_response = self.client.post(
             "/api/resource/move",
-            query_params={
-                "from": f"{file.name}",
-                "to": "moved.txt"
-            },
-            extra={"format": "json"}
+            query_params={"from": f"{file.name}", "to": "moved.txt"},
+            extra={"format": "json"},
         )
+
         assert move_file_response.status_code == 200
         assert move_file_response.data["path"] == ""
         assert move_file_response.data["name"] == "moved.txt"

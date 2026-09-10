@@ -19,16 +19,15 @@ class TestDirectoryView(TestCase):
 
     def test_create_directory(self) -> None:
         create_dir_response = self.client.post(
-            "/api/directory",
-            query_params={"path": "test/"},
-            extra={"format": "json"}
+            "/api/directory", query_params={"path": "test/"}, extra={"format": "json"}
         )
+
         assert create_dir_response.status_code == 201
+
         get_dir_content_response = self.client.get(
-            "/api/directory",
-            query_params={"path": ""},
-            extra={"format": "json"}
+            "/api/directory", query_params={"path": ""}, extra={"format": "json"}
         )
+
         assert get_dir_content_response.status_code == 200
         child_dir_meta = get_dir_content_response.data[0]
         assert child_dir_meta["path"] == ""
@@ -37,15 +36,12 @@ class TestDirectoryView(TestCase):
 
     def test_directory_already_exists(self) -> None:
         self.client.post(
-            "/api/directory",
-            query_params={"path": "test/"},
-            extra={"format": "json"}
+            "/api/directory", query_params={"path": "test/"}, extra={"format": "json"}
         )
         response = self.client.post(
-            "/api/directory",
-            query_params={"path": "test/"},
-            extra={"format": "json"}
+            "/api/directory", query_params={"path": "test/"}, extra={"format": "json"}
         )
+
         assert response.status_code == 409
         assert response.data["message"] == "Directory already exists."
 
@@ -53,7 +49,8 @@ class TestDirectoryView(TestCase):
         response = self.client.post(
             "/api/directory",
             query_params={"path": "non_existent/test/"},
-            extra={"format": "json"}
+            extra={"format": "json"},
         )
+
         assert response.status_code == 404
         assert response.data["message"] == "Parent directory not found."

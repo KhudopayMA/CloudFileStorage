@@ -6,15 +6,12 @@ test-job:
   image: ubuntu:26.04
   services:
     - name: docker:dind
-      # explicitly disable tls to avoid docker startup interruption
       command: [ "--tls=false" ]
   variables:
-    # Instruct Testcontainers to use the daemon of DinD, use port 2375 for non-tls connections.
     DOCKER_HOST: "tcp://docker:2375"
-    # Instruct Docker not to start over TLS.
     DOCKER_TLS_CERTDIR: ""
-    # Improve performance with overlayfs.
     DOCKER_DRIVER: overlay2
+    SECRET_KEY: $SECRET_KEY
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_PIPELINE_SOURCE == "push"
@@ -24,3 +21,10 @@ test-job:
     - export PATH="$HOME/.local/bin:$PATH"
   script:
     - sh ./scripts/test.sh
+  coverage: '/TOTAL.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
+  artifacts:
+    when: always
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml

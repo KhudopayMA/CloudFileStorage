@@ -1,8 +1,6 @@
-from django.contrib.auth.models import User
 from test_plus import APITestCase
 
 from test.factories import UserFactory
-
 
 # mypy: disable-error-code=misc
 
@@ -10,7 +8,7 @@ from test.factories import UserFactory
 class TestSignUpView(APITestCase):
     def setUp(self) -> None:
         self.password = "testpassword12345"
-        self.user = UserFactory(password=self.password)
+        self.user = UserFactory(password=self.password) #type: ignore[no-untyped-call]
 
     def test_user_creation(self) -> None:
         data = {"username": "user1", "password": "testpassword12345"}
