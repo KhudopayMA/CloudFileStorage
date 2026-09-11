@@ -1,10 +1,16 @@
+import logging
 from typing import cast
 
 import boto3  # type: ignore[import-untyped]
+from botocore.exceptions import ClientError  # type: ignore[import-untyped]
+from rest_framework.exceptions import APIException
 
+from config.exceptions import ConflictError, NotFound
 from config.settings import AWS_ACCESS_KEY_ID, AWS_ENDPOINT_URL, AWS_SECRET_ACCESS_KEY
 from storage.dtos import DirectoryMetaDto, FileDto, ResourceMetaDto
 from storage.enums import ResourceTypes
+
+logger = logging.getLogger(__name__)
 
 
 class S3Service:
@@ -21,10 +27,17 @@ class S3Service:
         return client
 
     def get_object_meta(self, path: str) -> ResourceMetaDto | DirectoryMetaDto:
-        obj = self.client.head_object(
-            Bucket="user-files",
-            Key=path,
-        )
+        try:
+            obj = self.client.head_object(
+                Bucket="user-files",
+                Key=path,
+            )
+        except ClientError as e:
+            error_code = e.response["Error"]["Code"]
+            if error_code == "404":
+                logger.warning("Resource %s does not exist", path)
+                raise NotFound("Resource not found.") from e
+            raise e
         if path.endswith("/"):
             return DirectoryMetaDto(
                 path=path[path.find("/") : path.rfind("/", 0, len(path) - 1) + 1],
@@ -42,9 +55,16 @@ class S3Service:
     def get_directory_objects(
         self, path: str
     ) -> list[ResourceMetaDto | DirectoryMetaDto]:
-        response = self.client.list_objects_v2(
-            Bucket="user-files", Prefix=path, Delimiter="/"
-        )
+        try:
+            response = self.client.list_objects_v2(
+                Bucket="user-files", Prefix=path, Delimiter="/"
+            )
+        except ClientError as e:
+            error_code = e.response["Error"]["Code"]
+            if error_code == "404":
+                raise NotFound() from e
+            else:
+                raise APIException() from e
         objects: list[ResourceMetaDto | DirectoryMetaDto] = []
         response.get("Contents")
         for obj in response.get("Contents"):
@@ -122,13 +142,19 @@ class S3Service:
     def upload_object(
         self, path: str, object_body: bytes, object_content_type: str
     ) -> None:
-        self.client.put_object(
-            Body=object_body,
-            Bucket="user-files",
-            Key=path,
-            ContentType=object_content_type,
-            IfNoneMatch="*",
-        )
+        try:
+            self.client.put_object(
+                Body=object_body,
+                Bucket="user-files",
+                Key=path,
+                ContentType=object_content_type,
+                IfNoneMatch="*",
+            )
+        except ClientError as e:
+            if e.response["Error"]["Code"] == "PreconditionFailed":
+                raise ConflictError() from e
+            else:
+                raise APIException() from e
 
     def move_object(self, from_path: str, to_path: str) -> None:
         if from_path.endswith("/"):
@@ -141,7 +167,7 @@ class S3Service:
                     new_path = (
                         to_path
                         + obj["Key"][
-                            obj["Key"].rfind("/", 0, len(obj["Key"]) - 1) + 1 :
+                            obj["Key"].rfind("/", 0, len(obj["Key"]) - 1) + 1:
                         ]
                     )
                 else:
