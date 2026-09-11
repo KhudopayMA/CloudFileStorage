@@ -18,7 +18,6 @@ class TestResourceView(TestCase):
         self.user = User.objects.get(username=data["username"])
         self.client.force_authenticate(user=self.user)
 
-
     def test_rename_file(self) -> None:
         file = SimpleUploadedFile(name="test.txt", content=b"Test file")
         create_file_response = self.client.post(

@@ -8,7 +8,7 @@ from test.factories import UserFactory
 class TestSignUpView(APITestCase):
     def setUp(self) -> None:
         self.password = "testpassword12345"
-        self.user = UserFactory(password=self.password) #type: ignore[no-untyped-call]
+        self.user = UserFactory(password=self.password)  # type: ignore[no-untyped-call]
 
     def test_user_creation(self) -> None:
         data = {"username": "user1", "password": "testpassword12345"}

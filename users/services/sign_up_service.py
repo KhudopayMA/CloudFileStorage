@@ -1,7 +1,7 @@
 import logging
 from dataclasses import asdict
 
-from botocore.exceptions import ClientError  #type: ignore[import-untyped]
+from botocore.exceptions import ClientError  # type: ignore[import-untyped]
 from django.contrib.auth import login
 from django.contrib.auth.models import User
 from django.db import transaction
@@ -26,7 +26,7 @@ def sign_up_user(user_credentials: UserCredentialsDto, request: Request) -> None
         try:
             storage_service.create_directory(path="", user_id=user.id)
             logger.info("Directory user-%-files in s3 was created.", user.id)
-        except ClientError as e:
+        except ClientError:
             logger.exception("Error creating directory in s3.")
         login(request, user)
         logger.info("The user %s has been registered", user_credentials.username)

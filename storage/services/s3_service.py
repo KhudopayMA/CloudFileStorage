@@ -9,9 +9,9 @@ from storage.enums import ResourceTypes
 
 class S3Service:
     def __init__(self) -> None:
-        self.client = self._create_client() #type: ignore[no-untyped-call]
+        self.client = self._create_client()  # type: ignore[no-untyped-call]
 
-    def _create_client(self): #type: ignore[no-untyped-def]
+    def _create_client(self):  # type: ignore[no-untyped-def]
         client = boto3.client(
             "s3",
             aws_access_key_id=AWS_ACCESS_KEY_ID,
@@ -51,8 +51,8 @@ class S3Service:
             if obj["Key"] != path:
                 objects.append(
                     ResourceMetaDto(
-                        path=path[path.find("/") + 1: path.rfind("/") + 1],
-                        name=obj["Key"][obj["Key"].rfind("/") + 1:],
+                        path=path[path.find("/") + 1 : path.rfind("/") + 1],
+                        name=obj["Key"][obj["Key"].rfind("/") + 1 :],
                         size=obj["Size"],
                         type=ResourceTypes.FILE,
                     )
@@ -61,39 +61,35 @@ class S3Service:
             for obj in response.get("CommonPrefixes"):
                 objects.append(
                     DirectoryMetaDto(
-                        path=path[path.find("/") + 1: path.rfind("/") + 1],
+                        path=path[path.find("/") + 1 : path.rfind("/") + 1],
                         name=obj["Prefix"][
-                             obj["Prefix"].rfind("/", 0, len(obj["Prefix"]) - 1) + 1:
-                             ],
+                            obj["Prefix"].rfind("/", 0, len(obj["Prefix"]) - 1) + 1 :
+                        ],
                         type=ResourceTypes.DIRECTORY,
                     )
                 )
         return objects
 
-    def search_objects(
-        self, path: str
-    ) -> list[ResourceMetaDto | DirectoryMetaDto]:
-        response = self.client.list_objects_v2(
-            Bucket="user-files", Prefix=path
-        )
+    def search_objects(self, path: str) -> list[ResourceMetaDto | DirectoryMetaDto]:
+        response = self.client.list_objects_v2(Bucket="user-files", Prefix=path)
         objects: list[ResourceMetaDto | DirectoryMetaDto] = []
         for obj in response.get("Contents"):
             if obj["Key"] != path:
                 if obj["Key"].endswith("/"):
                     objects.append(
                         DirectoryMetaDto(
-                            path=path[path.find("/") + 1: path.rfind("/") + 1],
+                            path=path[path.find("/") + 1 : path.rfind("/") + 1],
                             name=obj["Key"][
-                                 obj["Key"].rfind("/", 0, len(obj["Key"]) - 1) + 1:
-                                 ],
+                                obj["Key"].rfind("/", 0, len(obj["Key"]) - 1) + 1 :
+                            ],
                             type=ResourceTypes.DIRECTORY,
                         )
                     )
                 else:
                     objects.append(
                         ResourceMetaDto(
-                            path=path[path.find("/") + 1: path.rfind("/") + 1],
-                            name=obj["Key"][obj["Key"].rfind("/") + 1:],
+                            path=path[path.find("/") + 1 : path.rfind("/") + 1],
+                            name=obj["Key"][obj["Key"].rfind("/") + 1 :],
                             size=obj["Size"],
                             type=ResourceTypes.FILE,
                         )
@@ -145,7 +141,7 @@ class S3Service:
                     new_path = (
                         to_path
                         + obj["Key"][
-                            obj["Key"].rfind("/", 0, len(obj["Key"]) - 1) + 1:
+                            obj["Key"].rfind("/", 0, len(obj["Key"]) - 1) + 1 :
                         ]
                     )
                 else:

@@ -2,7 +2,7 @@ import logging
 import zipfile
 from io import BytesIO
 
-from botocore.exceptions import ClientError  #type: ignore[import-untyped]
+from botocore.exceptions import ClientError  # type: ignore[import-untyped]
 from rest_framework.exceptions import APIException
 
 from config.exceptions import ConflictError, NotFound
@@ -70,9 +70,7 @@ class StorageService:
                 raise APIException() from e
 
     def get_directory_content(
-            self,
-            path: str,
-            user_id: int
+        self, path: str, user_id: int
     ) -> list[ResourceMetaDto | DirectoryMetaDto]:
         user_path = f"user-{user_id}-files/" + path
         try:
