@@ -76,7 +76,7 @@ class StorageService:
     ) -> list[ResourceMetaDto | DirectoryMetaDto]:
         user_path = f"user-{user_id}-files/" + path
         try:
-            return self.s3_service.get_objects_meta(path=user_path, delimiter="/")
+            return self.s3_service.get_directory_objects(path=user_path)
         except ClientError as e:
             error_code = e.response["Error"]["Code"]
             if error_code == "404":
@@ -141,7 +141,7 @@ class StorageService:
         self, substring: str, user_id: int
     ) -> list[ResourceMetaDto | DirectoryMetaDto]:
         user_dir_path = f"user-{user_id}-files/"
-        user_resources = self.s3_service.get_objects_meta(user_dir_path)
+        user_resources = self.s3_service.search_objects(user_dir_path)
         suitable_resources = []
         for resource in user_resources:
             if substring in resource.path + resource.name:

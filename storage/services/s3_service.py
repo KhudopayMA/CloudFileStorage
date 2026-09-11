@@ -39,18 +39,65 @@ class S3Service:
                 type=ResourceTypes.FILE,
             )
 
-    def get_objects_meta(
-        self, path: str, delimiter: str = ""
+    def get_directory_objects(
+        self, path: str
     ) -> list[ResourceMetaDto | DirectoryMetaDto]:
         response = self.client.list_objects_v2(
-            Bucket="user-files", Prefix=path, Delimiter=delimiter
+            Bucket="user-files", Prefix=path, Delimiter="/"
         )
         objects: list[ResourceMetaDto | DirectoryMetaDto] = []
-        files = self._get_files(response, path)
-        objects.extend(files)
+        response.get("Contents")
+        for obj in response.get("Contents"):
+            if obj["Key"] != path:
+                objects.append(
+                    ResourceMetaDto(
+                        path=path[path.find("/") + 1: path.rfind("/") + 1],
+                        name=obj["Key"][obj["Key"].rfind("/") + 1:],
+                        size=obj["Size"],
+                        type=ResourceTypes.FILE,
+                    )
+                )
         if "CommonPrefixes" in response:
-            directories = self._get_directories(response, path)
-            objects.extend(directories)
+            for obj in response.get("CommonPrefixes"):
+                objects.append(
+                    DirectoryMetaDto(
+                        path=path[path.find("/") + 1: path.rfind("/") + 1],
+                        name=obj["Prefix"][
+                             obj["Prefix"].rfind("/", 0, len(obj["Prefix"]) - 1) + 1:
+                             ],
+                        type=ResourceTypes.DIRECTORY,
+                    )
+                )
+        return objects
+
+    def search_objects(
+        self, path: str
+    ) -> list[ResourceMetaDto | DirectoryMetaDto]:
+        response = self.client.list_objects_v2(
+            Bucket="user-files", Prefix=path
+        )
+        objects: list[ResourceMetaDto | DirectoryMetaDto] = []
+        for obj in response.get("Contents"):
+            if obj["Key"] != path:
+                if obj["Key"].endswith("/"):
+                    objects.append(
+                        DirectoryMetaDto(
+                            path=path[path.find("/") + 1: path.rfind("/") + 1],
+                            name=obj["Key"][
+                                 obj["Key"].rfind("/", 0, len(obj["Key"]) - 1) + 1:
+                                 ],
+                            type=ResourceTypes.DIRECTORY,
+                        )
+                    )
+                else:
+                    objects.append(
+                        ResourceMetaDto(
+                            path=path[path.find("/") + 1: path.rfind("/") + 1],
+                            name=obj["Key"][obj["Key"].rfind("/") + 1:],
+                            size=obj["Size"],
+                            type=ResourceTypes.FILE,
+                        )
+                    )
         return objects
 
     def delete_object(self, path: str) -> None:
@@ -98,7 +145,7 @@ class S3Service:
                     new_path = (
                         to_path
                         + obj["Key"][
-                            obj["Key"].rfind("/", 0, len(obj["Key"]) - 1) + 1 :
+                            obj["Key"].rfind("/", 0, len(obj["Key"]) - 1) + 1:
                         ]
                     )
                 else:
@@ -116,45 +163,3 @@ class S3Service:
                 CopySource={"Bucket": "user-files", "Key": from_path},
             )
             self.delete_object(from_path)
-
-    @staticmethod
-    def _get_files(response, path) -> list[ResourceMetaDto]:
-        #TODO тут логика разнесена и длч получения файлов и директорий. Скорее всего get_objects_meta где-то используется в раных контекстах
-        files = []
-        for obj in response.get("Contents"):
-            if obj["Key"] != path:
-                if obj["Key"].endswith("/"):
-                    files.append(
-                        DirectoryMetaDto(
-                            path=path[path.find("/") + 1 : path.rfind("/") + 1],
-                            name=obj["Key"][
-                                obj["Key"].rfind("/", 0, len(obj["Key"]) - 1) + 1 :
-                            ],
-                            type=ResourceTypes.DIRECTORY,
-                        )
-                    )
-                else:
-                    files.append(
-                        ResourceMetaDto(
-                            path=path[path.find("/") + 1 : path.rfind("/") + 1],
-                            name=obj["Key"][obj["Key"].rfind("/") + 1 :],
-                            size=obj["Size"],
-                            type=ResourceTypes.FILE,
-                        )
-                    )
-        return files
-
-    @staticmethod
-    def _get_directories(response, path) -> list[DirectoryMetaDto]:
-        directories = []
-        for obj in response.get("CommonPrefixes"):
-            directories.append(
-                DirectoryMetaDto(
-                    path=path[path.find("/") + 1: path.rfind("/") + 1],
-                    name=obj["Prefix"][
-                        obj["Prefix"].rfind("/", 0, len(obj["Prefix"]) - 1) + 1:
-                    ],
-                    type=ResourceTypes.DIRECTORY,
-                )
-            )
-        return directories
