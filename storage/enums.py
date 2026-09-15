@@ -1,7 +1,7 @@
-from enum import StrEnum, auto, unique
+from enum import StrEnum, unique
 
 
 @unique
 class ResourceTypes(StrEnum):
-    FILE = auto()
-    DIRECTORY = auto()
+    FILE = "FILE"
+    DIRECTORY = "DIRECTORY"
